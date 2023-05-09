@@ -1,20 +1,26 @@
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
+import css from './Searchbar.module.css';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-export class Searchbar extends Component {
+class Searchbar extends Component {
   state = {
     searchQuery: '',
   };
 
   handleChange = event => {
-    this.setState({ searchQuery: event.target.value });
-    // console.log(event.target.value);
+    this.setState({ searchQuery: event.currentTarget.value });
+    // console.log(event.currentTarget.value);
   };
 
   handleSubmit = event => {
     event.preventDefault();
 
     if (this.state.searchQuery.trim() === '') {
-      alert('Field can not be empty!');
+      toast.warn('The field cannot be empty!', {
+        theme: 'colored',
+      });
       return;
     }
 
@@ -24,16 +30,17 @@ export class Searchbar extends Component {
 
   render() {
     return (
-      <header className="searchbar">
-        <form className="form">
-          <button type="submit" className="button">
-            <span className="button-label">Search</span>
+      <header className={css.searchbar}>
+        <form className={css.searchbar__form} onSubmit={this.handleSubmit}>
+          <button type="submit" className={css.searchbar__btn}>
+            <span className={css.searchbar__btn__label}>Search</span>
           </button>
 
           <input
             onChange={this.handleChange}
             value={this.state.searchQuery}
-            className="input"
+            name="searchQuery"
+            className={css.searchbar__input}
             type="text"
             autoComplete="off"
             autoFocus
@@ -44,3 +51,9 @@ export class Searchbar extends Component {
     );
   }
 }
+
+Searchbar.propTypes = {
+  onSubmit: PropTypes.func,
+};
+
+export default Searchbar;

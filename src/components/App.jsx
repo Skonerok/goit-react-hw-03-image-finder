@@ -1,54 +1,113 @@
 import React, { Component } from 'react';
-import { Searchbar } from './Searchbar/Searchbar';
-import { ImageGallery } from './ImageGallery/ImageGallery';
-import { Button } from './Button/Button';
-import { Loader } from './Loader/Loader';
-import { Modal } from './Modal/Modal';
-import { fetchImages } from './services/fetch';
+import Searchbar from './Searchbar/Searchbar';
+import ImageGallery from './ImageGallery/ImageGallery';
+import Button from './Button/Button';
+import Loader from './Loader/Loader';
+import Modal from './Modal/Modal';
+import fetchImages from './services/fetch';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export class App extends Component {
   state = {
     searchQuery: '',
     images: [],
     page: 1,
+    selectedImage: null,
     loading: false,
-    showModal: false,
-    showBtn: false,
-    modalImage: '',
+    status: 'idle',
+    error: null,
+  }
+  totalHits = null;
+
+  async componentDidUpdate(_, prevState) {
+    const { page, searchQuery } = this.state;
+    if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
+      this.setState({ status: 'pending', loading: true });
+    }
+
+     try {
+        const imageData = await fetchImages(searchQuery, page);
+        this.totalHits = imageData.total;
+        const imagesHits = imageData.hits;
+        if (!imagesHits.length) {
+          toast.error('No results were found for your search, please try something else.', {
+            theme: 'colored',
+          });
+        }
+        this.setState(({ images }) => ({
+          images: [...images, ...imagesHits],
+          loading: false,
+          status: 'resolved',
+        }));
+
+      } catch (error) {
+       toast.error(`Sorry something went wrong`, {
+          theme: 'colored',
+        });
+        this.setState({ status: 'rejected', loading: false });
+      }
   }
   
   handleFormSubmit = searchQuery => {
+    // this.setState({ searchQuery });
+     if (this.state.searchQuery === searchQuery) {
+      return;
+    }
+    this.resetState();
     this.setState({ searchQuery });
   }
 
-  handleImageClick = image => {
-   this.setState({showModal: true, modalImage: image.largeImageURL})
+  handleSelectedImage = (largeImageUrl) => {
+   this.setState({ selectedImage: largeImageUrl })
+  };
+
+    resetState = () => {
+    this.setState({
+      searchQuery: '',
+      page: 1,
+      images: [],
+      selectedImage: null,
+      alt: null,
+      status: 'idle',
+    });
   };
 
    handleLoadMore = () => {
-    const { searchQuery, page } = this.state;
-     const nextPage = page + 1;
-     this.setState({ loading: true });
-     fetchImages(searchQuery, nextPage);
+      this.setState(prevState => ({
+      page: prevState.page + 1,
+    }));
   };
 
    handleCloseModal = () => {
-    this.setState({ showModal: false, modalImage: '' });
+      this.setState({
+      selectedImage: null,
+    });
   };
 
   render() {
-    const { images, loading, showModal, modalImage } = this.state;
+    const { images, selectedImage, loading, alt } = this.state;
 
     return (
       <>
         <Searchbar onSubmit={this.handleFormSubmit} />
-        <ImageGallery images={images} onImageClick={this.handleImageClick} />
         {loading && <Loader />}
-        {!images.length && <Button onClick={this.handleLoadMore} />}
-        {showModal && (
-          <Modal onClose={this.handleCloseModal}>
-            <img src={modalImage} alt="" />
-          </Modal>
+        {images.length > 0 && (
+          <ImageGallery
+            images={images}
+            onClick={this.handleSelectedImage}
+          />
+        )}
+        {images.length > 0 && images.length !== this.totalHits && (
+          <Button btnLoadMore={this.handleLoadMore} />
+        )}
+        <ToastContainer autoClose={3000} />
+        {selectedImage && (
+          <Modal
+          selectedImage={selectedImage}
+          tags={alt}
+          onClose={this.handleCloseModal}
+          />
         )}
       </>
     );

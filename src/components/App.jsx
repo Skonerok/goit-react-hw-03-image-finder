@@ -1,68 +1,68 @@
-import React, { Component } from 'react';
+import { Component } from 'react';
+import axios from 'axios';
+import PropTypes from 'prop-types';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Searchbar from './Searchbar/Searchbar';
 import ImageGallery from './ImageGallery/ImageGallery';
 import Button from './Button/Button';
 import Loader from './Loader/Loader';
 import Modal from './Modal/Modal';
-import fetchImages from './services/fetch';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import fetchImages from '../components/services/fetch';
+import { AppContainer } from './App.styled';
 
+axios.defaults.baseURL = 'https://pixabay.com/api/';
 export class App extends Component {
+  static propTypes = { searchQuery: PropTypes.string };
   state = {
     searchQuery: '',
     images: [],
     page: 1,
     selectedImage: null,
-    loading: false,
+    alt: null,
     status: 'idle',
     error: null,
-  }
+  };
   totalHits = null;
 
   async componentDidUpdate(_, prevState) {
     const { page, searchQuery } = this.state;
     if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
-      this.setState({ status: 'pending', loading: true });
-    }
+      this.setState({ status: 'pending' });
 
-     try {
+      try {
         const imageData = await fetchImages(searchQuery, page);
         this.totalHits = imageData.total;
         const imagesHits = imageData.hits;
         if (!imagesHits.length) {
-          toast.error('No results were found for your search, please try something else.', {
-            theme: 'colored',
-          });
+          toast.warning('Nothing was found for your request.');
         }
         this.setState(({ images }) => ({
           images: [...images, ...imagesHits],
-          loading: false,
           status: 'resolved',
         }));
 
       } catch (error) {
-       toast.error(`Sorry something went wrong`, {
-          theme: 'colored',
-        });
-        this.setState({ status: 'rejected', loading: false });
+        toast.error(`Something went wrong. ${error.message}`);
+        this.setState({ status: 'rejected' });
       }
+    }
   }
-  
   handleFormSubmit = searchQuery => {
-    // this.setState({ searchQuery });
-     if (this.state.searchQuery === searchQuery) {
+    if (this.state.searchQuery === searchQuery) {
       return;
     }
     this.resetState();
     this.setState({ searchQuery });
-  }
-
-  handleSelectedImage = (largeImageUrl) => {
-   this.setState({ selectedImage: largeImageUrl })
+  };
+  handleSelectedImage = (largeImageUrl, tags) => {
+    this.setState({
+      selectedImage: largeImageUrl,
+      alt: tags,
+    });
   };
 
-    resetState = () => {
+  resetState = () => {
     this.setState({
       searchQuery: '',
       page: 1,
@@ -73,43 +73,47 @@ export class App extends Component {
     });
   };
 
-   handleLoadMore = () => {
-      this.setState(prevState => ({
+  loadMore = () => {
+    this.setState(prevState => ({
       page: prevState.page + 1,
     }));
   };
 
-   handleCloseModal = () => {
-      this.setState({
+  closeModal = () => {
+    this.setState({
       selectedImage: null,
     });
   };
 
   render() {
-    const { images, selectedImage, loading, alt } = this.state;
-
+    const { images, status, selectedImage, alt, error } = this.state;
     return (
-      <>
+      <AppContainer>
         <Searchbar onSubmit={this.handleFormSubmit} />
-        {loading && <Loader />}
+        <ToastContainer autoClose={3000} theme="colored" />
+        {status === 'pending' && <Loader />}
+        {error && (
+          <h1 style={{ color: 'orangered', textAlign: 'center' }}>
+            {error.message}
+          </h1>
+        )}
         {images.length > 0 && (
           <ImageGallery
             images={images}
-            onClick={this.handleSelectedImage}
+            selectedImage={this.handleSelectedImage}
           />
         )}
         {images.length > 0 && images.length !== this.totalHits && (
-          <Button btnLoadMore={this.handleLoadMore} />
+          <Button onClick={this.loadMore} />
         )}
-        <ToastContainer autoClose={3000} />
         {selectedImage && (
           <Modal
-          selectedImage={selectedImage}
-          tags={alt}
-          onClose={this.handleCloseModal}
+            selectedImage={selectedImage}
+            tags={alt}
+            onClose={this.closeModal}
           />
         )}
-      </>
+      </AppContainer>
     );
-  };
-};
+  }
+}

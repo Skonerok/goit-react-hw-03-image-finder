@@ -1,48 +1,47 @@
-import React, { Component } from 'react';
-import PropTypes from 'prop-types';
+import { Component } from 'react';
 import { createPortal } from 'react-dom';
-import css from './Modal.module.css';
+import PropTypes from 'prop-types';
+import { ModalOverlay, ModalContainer } from './Modal.styled';
 
 const modalRoot = document.querySelector('#modal-root');
 
-class Modal extends Component {
+export default class Modal extends Component {
 
-    componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyDown)
-    };
+  componentDidMount() {
+    window.addEventListener('keydown', this.handleKeyDown);
+  }
 
-    componentWillUnmount() {
-        window.removeEventListener('keydown', this.handleKeyDown)
-    };
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this.handleKeyDown);
+  }
 
-    handleKeyDown = e => {
-        if (e.code === 'Escape') {
-            this.props.onClose();
-        }
-    };
+  handleKeyDown = e => {
+    if (e.code === 'Escape') {
+      this.props.onClose();
+    }
+  };
 
-    handleBackdropClick = e => {
-        if (e.target === e.currentTarget) {
-            this.props.onClose();
-        }
-    };
+  handleBackdropClick = e => {
+    if (e.target === e.currentTarget) {
+      this.props.onClose();
+    }
+  };
+  render() {
+    const { selectedImage, tags } = this.props;
 
-    render() {
-        const { selectedImage, tags } = this.props;
-        return createPortal(
-            <div className={css.overlay} onClick={this.handleBackdropClick}>
-                <div className={css.modal}>
-                    <img src={selectedImage} alt={tags} />
-                </div>
-            </div>,
-            modalRoot,
-        );
-    };
-};
+    return createPortal(
+      <ModalOverlay onClick={this.handleBackdropClick}>
+        <ModalContainer>
+          <img src={selectedImage} alt={tags} />
+        </ModalContainer>
+      </ModalOverlay>,
+      modalRoot
+    );
+  }
+}
 
 Modal.propTypes = {
     selectedImage: PropTypes.string,
     tags: PropTypes.string,
+    onClose: PropTypes.func,
   };
-
-export default Modal;

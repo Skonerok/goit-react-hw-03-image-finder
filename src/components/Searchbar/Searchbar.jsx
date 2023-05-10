@@ -1,59 +1,54 @@
-import React, { Component } from 'react';
-import PropTypes from 'prop-types';
-import css from './Searchbar.module.css';
+import { Component } from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import PropTypes from 'prop-types';
+import {
+  Searchbar,
+  SearchForm,
+  Input,
+  SearchBtn,
+  SearchFormBtnLabel,
+} from './Searchbar.styled';
 
-class Searchbar extends Component {
+export default class SearhBar extends Component {
   state = {
     searchQuery: '',
   };
 
-  handleChange = event => {
-    this.setState({ searchQuery: event.currentTarget.value });
-    // console.log(event.currentTarget.value);
+  handleChange = e => {
+    this.setState({ searchQuery: e.currentTarget.value });
   };
-
-  handleSubmit = event => {
-    event.preventDefault();
-
+  handleSubmit = e => {
+    e.preventDefault();
     if (this.state.searchQuery.trim() === '') {
-      toast.warn('The field cannot be empty!', {
-        theme: 'colored',
-      });
+      toast.error('The search field cannot be empty!');
       return;
     }
-
     this.props.onSubmit(this.state.searchQuery);
     this.setState({ searchQuery: '' });
   };
-
   render() {
     return (
-      <header className={css.searchbar}>
-        <form className={css.searchbar__form} onSubmit={this.handleSubmit}>
-          <button type="submit" className={css.searchbar__btn}>
-            <span className={css.searchbar__btn__label}>Search</span>
-          </button>
-
-          <input
-            onChange={this.handleChange}
-            value={this.state.searchQuery}
-            name="searchQuery"
-            className={css.searchbar__input}
+      <Searchbar>
+        <SearchForm onSubmit={this.handleSubmit}>
+           <SearchBtn type="submit">
+            <SearchFormBtnLabel>Search</SearchFormBtnLabel>
+          </SearchBtn>
+          <Input
             type="text"
             autoComplete="off"
             autoFocus
             placeholder="Search images and photos"
+            name="serchQuery"
+            value={this.state.searchQuery}
+            onChange={this.handleChange}
           />
-        </form>
-      </header>
+
+        </SearchForm>
+      </Searchbar>
     );
   }
 }
-
 Searchbar.propTypes = {
   onSubmit: PropTypes.func,
 };
-
-export default Searchbar;
